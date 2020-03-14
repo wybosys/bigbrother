@@ -108,13 +108,14 @@ class EventInfo:
     def Read(d):
         #print(d)
         typ = d[0]
+        r = None
         if typ == 'KEY':
           r = EventInfoKey()
-          if r.read(d):
-            return r
+        if typ == 'SW':
+          r = EventInfoSw()
         elif typ == 'ABS':
           r = EventInfoAbs()
-          if r.read(d):
+        if r.read(d):
             return r
         return None
 
@@ -190,6 +191,11 @@ class EventInfoSw(EventInfo):
         print('SW (%s):' % self.value)
         print(self.values)
         return ''
+
+    def read(self, d):
+        super().read(d)
+        self.values = d[2]
+        return True
 
 class EventDevice:
     def __init__(self):
