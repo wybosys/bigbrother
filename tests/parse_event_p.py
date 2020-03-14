@@ -7,10 +7,12 @@ add device 1: /dev/input/event7
   name:     "sdm660-snd-card-cdp Button Jack"
   events:
     KEY (0001): 0072  0073  00e2 
-    SW     (0005): 0002  0004  0006  0007  000f  0010  0012 
+        SW  (0005): 0002  0004  0006  0007  000f  0010  0012 
     ABS (0003): 0000  : value 0, min 0, max 1079, fuzz 0, flat 0, resolution 0
                 0001  : value 0, min 0, max 2279, fuzz 0, flat 0, resolution 0
-                0019  : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0
+                0019  : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0  
+  input props:
+    <none>
 """
 
 data = """
@@ -172,22 +174,29 @@ class EventDevice:
 
 # 构造ebnf解析器
 integer = pp.Word(pp.nums)
-hex = pp.Word(pp.hexnums)
+hex = pp.Word(pp.nums + 'abcdef')
 path = pp.Word(pp.alphanums + '/')
+key = pp.Word(pp.alphanums)
+
 info_name = 'name:' + pp.QuotedString('"')
-info_value = '(' + hex + ')'
-info_event_key = 'KEY' + info_value + ':' + pp.OneOrMore(hex)
-info_event_sw = 'SW' + info_value + ':' + pp.OneOrMore(hex)
-info_event_abs_value = pp.Word(pp.alphas) + integer + pp.Optional(',')
-info_event_abs = 'ABS' + info_value + ':' + hex + ':' + pp.OneOrMore(info_event_abs_value)
+info_value = pp.Suppress('(') + hex + pp.Suppress(')')
+
+info_event_key = 'KEY' + info_value + pp.Suppress(':') + pp.OneOrMore(hex)
+info_event_sw = 'SW' + info_value + pp.Suppress(':') + pp.OneOrMore(hex)
+info_event_abs_value = key + integer + pp.Suppress(pp.Optional(','))
+info_event_abs_values = hex + pp.Suppress(':') + pp.OneOrMore(info_event_abs_value)
+info_event_abs = 'ABS' + info_value + pp.Suppress(':') + pp.OneOrMore(info_event_abs_values)
 info_events = 'events:' + pp.ZeroOrMore(info_event_key) + pp.ZeroOrMore(info_event_sw) + pp.ZeroOrMore(info_event_abs)
-infos = info_name + info_events
+
+input_prop_value = '<none>' | pp.Word(pp.string.ascii_uppercase + '_')
+input_props = 'input props:' + input_prop_value
+
+infos = info_name + info_events + input_props
 device = 'add device' + integer + ':' + path + infos
-nottypewriter = 'Not a typewriter'
 devices = pp.OneOrMore(device)
 
 ed = EventDevice()
-if ed.parse(test):
+if ed.parse(data):
     print(ed)
 else:
     print("解析失败")
