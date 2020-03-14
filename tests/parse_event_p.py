@@ -194,7 +194,7 @@ info_events = pp.Suppress('events:') + pp.Group(pp.ZeroOrMore(pp.Group(info_even
 input_prop_value = '<none>' | pp.Word(pp.string.ascii_uppercase + '_')
 input_props = 'input props:' + input_prop_value
 
-infos = pp.Suppress(info_name) + pp.Group(info_events) + input_props
+infos = pp.Suppress(info_name) + pp.Group(info_events) + pp.Group(input_props)
 device = pp.Suppress('add device') + integer + pp.Suppress(':') + path + infos
 devices = pp.OneOrMore(pp.Group(device))
 
