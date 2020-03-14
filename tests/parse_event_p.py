@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import pyparsing as pp
+import json
 
 test = """
 add device 1: /dev/input/event7
@@ -163,9 +164,10 @@ class EventDevice:
         return ''
 
     def parse(self, str):
-        devices.skipWhitespace = True   
+        t = devices()        
+        t.skipWhitespace = True                
         try:
-          ret = devices.parseString(str)
+          ret = t.parseString(str)
           print(ret)
         except:
           raise
@@ -181,19 +183,20 @@ key = pp.Word(pp.alphanums)
 info_name = 'name:' + pp.QuotedString('"')
 info_value = pp.Suppress('(') + hex + pp.Suppress(')')
 
-info_event_key = 'KEY' + info_value + pp.Suppress(':') + pp.OneOrMore(hex)
+info_event_key = 'KEY' + info_value + pp.Suppress(':') + pp.Group(pp.OneOrMore(hex))
 info_event_sw = 'SW' + info_value + pp.Suppress(':') + pp.OneOrMore(hex)
 info_event_abs_value = key + integer + pp.Suppress(pp.Optional(','))
-info_event_abs_values = hex + pp.Suppress(':') + pp.OneOrMore(info_event_abs_value)
-info_event_abs = 'ABS' + info_value + pp.Suppress(':') + pp.OneOrMore(info_event_abs_values)
-info_events = 'events:' + pp.ZeroOrMore(info_event_key) + pp.ZeroOrMore(info_event_sw) + pp.ZeroOrMore(info_event_abs)
+info_event_abs_values = hex + pp.Suppress(':') + pp.Group(pp.OneOrMore(pp.Group(info_event_abs_value)))
+info_event_abs = 'ABS' + info_value + pp.Suppress(':') + pp.OneOrMore(pp.Group(info_event_abs_values))
+info_event = info_event_key | info_event_sw | info_event_abs
+info_events = pp.Suppress('events:') + pp.Group(pp.ZeroOrMore(pp.Group(info_event)))
 
 input_prop_value = '<none>' | pp.Word(pp.string.ascii_uppercase + '_')
 input_props = 'input props:' + input_prop_value
 
-infos = info_name + info_events + input_props
-device = 'add device' + integer + ':' + path + infos
-devices = pp.OneOrMore(device)
+infos = pp.Suppress(info_name) + pp.Group(info_events) + input_props
+device = pp.Suppress('add device') + integer + pp.Suppress(':') + path + infos
+devices = pp.OneOrMore(pp.Group(device))
 
 ed = EventDevice()
 if ed.parse(data):
