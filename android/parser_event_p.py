@@ -2,6 +2,18 @@
 
 import pyparsing as pp
 
+def hex2dec(str):
+    return int('0x' + str, 16)
+
+def dec2hex(v):
+    return '%04x' % v
+
+def list_hex2dec(l):
+    return [hex2dec(e) for e in l]
+
+def list_dec2hex(l):
+    return [dec2hex(e) for e in l]
+
 class EventInfo:    
     TYPE_UNKNOWN = 0
     TYPE_KEY = 1
@@ -11,10 +23,10 @@ class EventInfo:
     def __init__(self):
         super().__init__()
         self.type = EventInfo.TYPE_UNKNOWN
-        self.type_value = None
+        self.type_value = 0
 
     def read(self, d):
-        self.type_value = d[1]
+        self.type_value = hex2dec(d[1])
 
     @staticmethod
     def Read(d):
@@ -39,12 +51,12 @@ class EventInfoKey(EventInfo):
 
     def read(self, d):
         super().read(d)
-        self.values = d[2]
+        self.values = list_hex2dec(d[2])
         return True
 
     def __repr__(self):      
-        print('KEY (%s):' % self.type_value)
-        print(self.values)
+        print('KEY (%s):' % dec2hex(self.type_value))
+        print(list_dec2hex(self.values))
         return ''
         
 class EventInfoAbsValue:
@@ -79,7 +91,7 @@ class EventInfoAbs(EventInfo):
         self.values = {}
 
     def __repr__(self):      
-        print('ABS (%s):' % self.type_value)
+        print('ABS (%s):' % dec2hex(self.type_value))
         print(self.values)
         return ''
 
@@ -96,17 +108,16 @@ class EventInfoSw(EventInfo):
     def __init__(self):
         super().__init__()
         self.type = EventInfo.TYPE_SW
-        self.value = ''
         self.values = []
 
     def __repr__(self):
         print('SW (%s):' % self.value)
-        print(self.values)
+        print(list_dec2hex(self.values))
         return ''
 
     def read(self, d):
         super().read(d)
-        self.values = d[2]
+        self.values = list_hex2dec(d[2])
         return True
 
 class EventDevice:
@@ -127,6 +138,7 @@ class EventDevice:
         self.path = ''
         self.name = ''
         self.events = {}
+        self.input_props = ''
 
     def read(self, d):
         self.index = int(d[0])
@@ -136,6 +148,7 @@ class EventDevice:
           e = EventInfo.Read(r)
           if e:
             self.events[e.type] = e
+        self.input_props = d[4]   
         return True 
 
 class EventDevices:
@@ -184,7 +197,7 @@ info_event = info_event_key | info_event_sw | info_event_abs
 info_events = pp.Suppress('events:') + pp.Group(pp.OneOrMore(pp.Group(info_event)))
 
 input_prop_value = '<none>' | pp.Word(pp.string.ascii_uppercase + '_')
-input_props = 'input props:' + input_prop_value
+input_props = pp.Suppress('input props:') + pp.OneOrMore(input_prop_value)
 
 infos = info_name + info_events + pp.Group(input_props)
 device = pp.Suppress('add device') + integer + pp.Suppress(':') + path + infos
