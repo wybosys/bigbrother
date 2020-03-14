@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
 
-import pyparser
+import pyparsing as pp
+
+test = """
+add device 1: /dev/input/event7
+  name:     "sdm660-snd-card-cdp Button Jack"
+  events:
+    KEY (0001): 0072  0073  00e2 
+    SW     (0005): 0002  0004  0006  0007  000f  0010  0012 
+    ABS (0003): 0000  : value 0, min 0, max 1079, fuzz 0, flat 0, resolution 0
+                0001  : value 0, min 0, max 2279, fuzz 0, flat 0, resolution 0
+                0019  : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0
+"""
 
 data = """
 add device 1: /dev/input/event7
@@ -76,3 +87,107 @@ could not get driver version for /dev/input/mice, Not a typewriter
 could not get driver version for /dev/input/mouse1, Not a typewriter
 """
 
+class EventInfo:    
+    TYPE_UNKNOWN = 0
+    TYPE_KEY = 1
+    TYPE_ABS = 2
+    TYPE_SW = 3
+    def __init__(self):
+        super().__init__()
+        self.type = EventInfo.TYPE_UNKNOWN
+        self.type_value = 0
+
+class EventInfoKey(EventInfo):
+    def __init__(self):
+        super().__init__()
+        self.values = []
+
+class EventInfoAbsValue:
+    def __init__(self):
+        super().__init__()
+        self.value = 0
+        self.min = 0
+        self.max = 0
+        self.fuzz = 0
+        self.flat = 0
+        self.resolution = 0
+
+    def __repr__(self):
+        print('value %d, min %d, max %d, fuzz %d, flat %d, resolution $d' % (self.value, self.min, self.max, self.fuzz, self.flat, self.resolution))
+        return ''
+
+class EventInfoAbs(EventInfo):
+    def __init__(self):
+        super().__init__()
+        self.value = ''
+        self.values = {}
+
+    def __repr__(self):      
+        print('ABS (%s):' % self.value)
+        print(self.values)
+        return ''
+
+class EventInfoSw(EventInfo):
+    def __init__(self):
+        super().__init__()
+        self.value = ''
+        self.values = []
+
+    def __repr__(self):
+        print('SW (%s):' % self.value)
+        print(self.values)
+        return ''
+
+class EventInfoInputProps:    
+    INPUT_PROP_DIRECT = 1
+
+class EventDevice:
+    def __init__(self):
+        super().__init__()
+        self.index = 0
+        self.path = ''
+        self.name = ''
+        self.events = {}
+        self.input_props = None
+
+    def __repr__(self):
+        print('device %d: %s' % (self.index, self.path))
+        print('name: %s' % self.name)
+        print('events:')
+        for k in self.events:
+            print(self.events[k])
+        print('input props:')
+        print(self.input_props)        
+        return ''
+
+    def parse(self, str):
+        devices.skipWhitespace = True   
+        try:
+          ret = devices.parseString(str)
+          print(ret)
+        except:
+          raise
+          return False
+        return True
+
+# 构造ebnf解析器
+integer = pp.Word(pp.nums)
+hex = pp.Word(pp.hexnums)
+path = pp.Word(pp.alphanums + '/')
+info_name = 'name:' + pp.QuotedString('"')
+info_value = '(' + hex + ')'
+info_event_key = 'KEY' + info_value + ':' + pp.OneOrMore(hex)
+info_event_sw = 'SW' + info_value + ':' + pp.OneOrMore(hex)
+info_event_abs_value = pp.Word(pp.alphas) + integer + pp.Optional(',')
+info_event_abs = 'ABS' + info_value + ':' + hex + ':' + pp.OneOrMore(info_event_abs_value)
+info_events = 'events:' + pp.ZeroOrMore(info_event_key) + pp.ZeroOrMore(info_event_sw) + pp.ZeroOrMore(info_event_abs)
+infos = info_name + info_events
+device = 'add device' + integer + ':' + path + infos
+nottypewriter = 'Not a typewriter'
+devices = pp.OneOrMore(device)
+
+ed = EventDevice()
+if ed.parse(test):
+    print(ed)
+else:
+    print("解析失败")
