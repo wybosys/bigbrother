@@ -2,7 +2,7 @@
 
 import sys, subprocess, signal
 
-print(sys.argv)
+#print(sys.argv)
 
 proc = subprocess.Popen(' '.join(sys.argv[1:]), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
