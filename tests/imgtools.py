@@ -57,8 +57,7 @@ class FindPattern(Case):
         if mth == cv.TM_SQDIFF_NORMED:
             tl = ml
         else:
-            tl = xl
-        self._src = src
+            tl = xl        
 
         self.passed = (1 - xv) < self.factor        
         if self.passed:            
@@ -68,8 +67,7 @@ class FindPattern(Case):
         return self
 
     def show(self):
-        #tmp = cv.imread(self._src)
-        tmp = self._src.copy()
+        tmp = cv.imread(self._src)
         if self.passed:        
             tl = (self.region[0], self.region[1])
             br = (self.region[0] + self.region[2], self.region[1] + self.region[3])
