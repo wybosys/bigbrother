@@ -11,7 +11,7 @@ class Case:
         self.passed = False
 
     def process(self):
-        pass
+        return self
 
     def show(self):
         if self.processed is None:
@@ -65,6 +65,7 @@ class FindPattern(Case):
             self.region = (tl[0], tl[1], tw, th)        
         else:
             self.region = None        
+        return self
 
     def show(self):
         #tmp = cv.imread(self._src)
